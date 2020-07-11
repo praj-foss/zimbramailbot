@@ -8,7 +8,8 @@
 (defn set-webhook [api-url hook-url]
   @(http/get (str api-url "/setWebhook")
              {:headers {"Content-Type" "application/json"}
-              :body    (json/generate-string {:url hook-url})}))
+              :body    (json/generate-string {:url hook-url})
+              :as      :text}))
 
 (defroutes app-routes
   (route/not-found "Not Found"))
