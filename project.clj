@@ -1,5 +1,5 @@
-(defproject in.praj.zimbramailbot/chat "0.0.1-SNAPSHOT"
-  :description "Chat service of Zimbra Mailbot"
+(defproject in.praj/zimbramailbot "0.0.1-SNAPSHOT"
+  :description "Telegram bot for Zimbra mail server"
   :url "https://github.com/praj-foss/zimbramailbot"
 
   :min-lein-version "2.0.0"
