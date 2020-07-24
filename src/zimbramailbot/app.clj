@@ -1,9 +1,13 @@
-(ns chat.app
+(ns zimbramailbot.app
   (:require [compojure.core :refer :all]
             [compojure.route :as route]
-            [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
             [org.httpkit.client :as http]
-            [cheshire.core :as json]))
+            [org.httpkit.server :refer [run-server]]
+            [cheshire.core :as json]
+            [ring.middleware.reload :refer [wrap-reload]]
+            [ring.middleware.defaults
+             :refer [wrap-defaults api-defaults]])
+  (:gen-class))
 
 (defn set-webhook [api-url hook-url]
   @(http/get (str api-url "/setWebhook")
@@ -15,4 +19,7 @@
   (route/not-found "Not Found"))
 
 (def handler
-  (wrap-defaults app-routes site-defaults))
+  (wrap-defaults app-routes api-defaults))
+
+(defn -main [& args]
+  (run-server (wrap-reload #'handler) {:port 8080}))

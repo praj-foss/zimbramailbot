@@ -1,11 +1,11 @@
-(ns chat.app-test
+(ns zimbramailbot.app-test
   (:require [clojure.test :refer :all]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
             [org.httpkit.server :as s]
             [compojure.core :refer [routes GET]]
             [compojure.route :as route]
             [cheshire.core :as json]
-            [chat.app :refer :all]))
+            [zimbramailbot.app :refer :all]))
 
 (def mock-telegram
   (wrap-defaults
