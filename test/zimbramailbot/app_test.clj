@@ -1,5 +1,6 @@
 (ns zimbramailbot.app-test
   (:require [clojure.test :refer :all]
+            [ring.mock.request :as mock]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
             [org.httpkit.server :as s]
             [compojure.core :refer [routes GET]]
@@ -24,3 +25,20 @@
            (is (= {"url" "example"} (json/parse-string (:body res)))
                "Must include webhook url in request body"))
          (finally (stopper)))))
+
+(deftest test-update
+  (let [status-for (fn [ip]
+                     (-> (mock/request :post "/updates")
+                         (mock/header "X-Forwarded-For" ip)
+                         (handler)
+                         (:status)))]
+    (testing "authorized Telegram IPs"
+      (is (= 200 (status-for "149.154.160.0")))
+      (is (= 200 (status-for "149.154.175.255")))
+      (is (= 200 (status-for "91.108.4.0")))
+      (is (= 200 (status-for "91.108.7.255"))))
+    (testing "other random IPs"
+      (is (= 403 (status-for "172.217.167.164")))
+      (is (= 403 (status-for "104.91.50.11")))
+      (is (= 403 (:status (handler
+                           (mock/request :post "/updates"))))))))
