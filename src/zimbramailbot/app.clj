@@ -19,6 +19,15 @@
               :body    (json/generate-string {:url hook-url})
               :as      :text}))
 
+(defn parse-update [update]
+  (let [update-map (json/parse-string update)
+        user       (get-in update-map ["message" "from" "id"])
+        command    (get-in update-map ["message" "text"])]
+    {:user user
+     :command (some-> (re-find #"^/[a-z]+$" command)
+                      (subs 1)
+                      (keyword))}))
+
 (defn- ipv4? [addr]
   (-> (str "^((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}"
            "(0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)$")
