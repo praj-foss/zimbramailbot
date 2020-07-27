@@ -38,7 +38,8 @@
       (is (= 200 (status-for "91.108.4.0")))
       (is (= 200 (status-for "91.108.7.255"))))
     (testing "other random IPs"
-      (is (= 403 (status-for "172.217.167.164")))
-      (is (= 403 (status-for "104.91.50.11")))
-      (is (= 403 (:status (handler
-                           (mock/request :post "/updates"))))))))
+      (is (= 404 (status-for "172.217.167.164")))
+      (is (= 404 (status-for "104.91.50.11")))
+      (is (= 404 (status-for "2001:db8:85a3:8d3:1319:8a2e:370:7348")))
+      (is (= 404 (:status
+                  (handler (mock/request :post "/updates"))))))))
