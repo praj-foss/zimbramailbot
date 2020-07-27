@@ -27,22 +27,24 @@
          (finally (stopper)))))
 
 (deftest test-update
-  (let [status-for (fn [ip]
-                     (-> (mock/request :post "/updates")
-                         (mock/header "X-Forwarded-For" ip)
-                         (handler)
-                         (:status)))]
+  (let [status-for #(-> (mock/request :post "/updates")
+                        (mock/header "X-Forwarded-For" %)
+                        (handler)
+                        (:status))]
     (testing "authorized Telegram IPs"
-      (is (= 200 (status-for "149.154.160.0")))
-      (is (= 200 (status-for "149.154.175.255")))
-      (is (= 200 (status-for "91.108.4.0")))
-      (is (= 200 (status-for "91.108.7.255"))))
+      (doseq [ip ["149.154.160.0"
+                  "149.154.175.255"
+                  "91.108.4.0"
+                  "91.108.7.255"]]
+        (is (= 200 (status-for ip)))))
     (testing "other random IPs"
-      (is (= 404 (status-for "172.217.167.164")))
-      (is (= 404 (status-for "104.91.50.11")))
-      (is (= 404 (status-for "2001:db8:85a3:8d3:1319:8a2e:370:7348")))
-      (is (= 404 (:status
-                  (handler (mock/request :post "/updates"))))))))
+      (doseq [ip ["172.217.167.164"
+                  "104.91.50.11"
+                  "2001:db8:85a3:8d3:1319:8a2e:370:7348"]]
+        (is (= 404 (status-for ip))))))
+  (is (= 404 (:status
+              (handler (mock/request :post "/updates"))))
+      "localhost is unauthorized for posting updates"))
 
 (defn- mock-update [user-id text]
   (json/generate-string
