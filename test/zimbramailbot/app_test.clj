@@ -78,3 +78,22 @@
                   "//quit"]]
       (is (= {:user 456 :command nil}
              (parse-update (mock-update 456 text)))))))
+
+(deftest test-processor
+  (testing "available commands"
+    (is (= (str "Hello! I'm Zimbra Mailbot.\n"
+                "I can forward emails from your "
+                "Zimbra mailbox to this chat. "
+                "To log into your account, send "
+                "/login command. Send /help to "
+                "list all available commands.")
+           (:reply (process-update {:user 123 :command :start}))))
+
+    (is (= (str "I can understand these commands:\n"
+                "/login - get link to log into my service\n"
+                "/logout - log out of my service\n"
+                "/help - display this help message again")
+           (:reply (process-update {:user 345 :command :help}))))
+
+    (is (= "Logged out successfully!"
+           (:reply (process-update {:user 567 :command :logout}))))))
