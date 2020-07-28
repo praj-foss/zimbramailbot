@@ -50,11 +50,19 @@
             "/help - display this help message again")
        (assoc umap :reply)))
 
+(defmethod process-update :login
+  [{user :user :as umap}]
+  (->> (if-not (contains? @sessions user)
+         (do (swap! sessions assoc user {})
+             "Logged in successfully!")
+         "You're logged in already.")
+       (assoc umap :reply)))
+
 (defmethod process-update :logout
   [{user :user :as umap}]
-  (->> (if (and (contains? @sessions user)
-                (swap! sessions dissoc user))
-         "Logged out successfully!"
+  (->> (if (contains? @sessions user)
+         (do (swap! sessions dissoc user)
+             "Logged out successfully!")
          "You're logged out already.")
        (assoc umap :reply)))
 

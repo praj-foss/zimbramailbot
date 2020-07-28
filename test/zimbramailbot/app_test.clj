@@ -95,10 +95,16 @@
                 "/help - display this help message again")
            (:reply (process-update {:user 345 :command :help}))))
 
-    (let [user 567 session {}]
+    (let [user 567]
+      (is (= "Logged in successfully!"
+             (:reply (process-update {:user user :command :login}))))
+      (is (= "You're logged in already."
+             (:reply (process-update {:user user :command :login}))))
+      (swap! sessions dissoc user))
+
+    (let [user 789]
       (is (= "You're logged out already."
              (:reply (process-update {:user user :command :logout}))))
-      (swap! sessions assoc user session)
+      (swap! sessions assoc user {})
       (is (= "Logged out successfully!"
-             (:reply (process-update {:user user :command :logout}))))
-      (is (not (contains? @sessions user))))))
+             (:reply (process-update {:user user :command :logout})))))))
