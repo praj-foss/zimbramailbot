@@ -12,11 +12,18 @@
 (def ^:private mock-telegram
   (wrap-defaults
    (routes
-    (GET "/setWebhook" {body :body content :content-type}
-         (if (= "application/json" content)
-           {:status 200 :body body}
-           {:status 400}))
-    (POST "/sendMessage" {body-json :body content :content-type}
+    (POST "/setWebhook"
+          {body-json :body content :content-type}
+          (let [body (json/parse-string (slurp body-json))]
+            (if (and (= "application/json" content)
+                     (contains? body "url"))
+              (-> (json/generate-string body)
+                  (res/response)
+                  (res/content-type content)
+                  (res/status 200))
+              (res/status 400))))
+    (POST "/sendMessage"
+          {body-json :body content :content-type}
           (let [body (json/parse-string (slurp body-json))]
             (if (and (= "application/json" content)
                      (contains? body "chat_id")

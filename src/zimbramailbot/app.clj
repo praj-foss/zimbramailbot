@@ -14,10 +14,9 @@
   (:gen-class))
 
 (defn set-webhook [api-url hook-url]
-  @(http/get (str api-url "/setWebhook")
-             {:headers {"Content-Type" "application/json"}
-              :body    (json/generate-string {:url hook-url})
-              :as      :text}))
+  @(http/post (str api-url "/setWebhook")
+              {:headers {"Content-Type" "application/json"}
+               :body    (json/generate-string {"url" hook-url})}))
 
 (defn parse-update [update]
   (let [update-map (json/parse-string update)
@@ -75,7 +74,6 @@
 (defn send-message [api-url {chat :chat reply :reply}]
   @(http/post (str api-url "/sendMessage")
               {:headers {"Content-Type" "application/json"}
-               :as      :text
                :body    (json/generate-string
                          {"chat_id" chat "text" reply})}))
 
