@@ -46,19 +46,19 @@
               (handler (mock/request :post "/updates"))))
       "localhost is unauthorized for posting updates"))
 
-(defn- mock-update [user-id text]
+(defn- mock-update [id text]
   (json/generate-string
    {"update_id" 1000
     "message"
     {"date" 1441645532
      "chat" {"last_name"  "TestLast"
-             "id"         user-id
+             "id"         id
              "type"       "private"
              "first_name" "TestFirst"
              "username"   "TestUser"}
      "message_id" 1365
      "from" {"last_name"  "TestLast"
-             "id"         user-id
+             "id"         id
              "first_name" "TestFirst"
              "username"   "TestUser"}
      "text" text}}))
@@ -69,14 +69,14 @@
                             "/help"   :help
                             "/login"  :login
                             "/logout" :logout}]
-      (is (= {:user 123 :command command}
+      (is (= {:chat 123 :command command}
              (parse-update (mock-update 123 text))))))
   (testing "invalid commands"
     (doseq [text ["/INVALID"
                   "/more invalid"
                   "more invalid"
                   "//quit"]]
-      (is (= {:user 456 :command nil}
+      (is (= {:chat 456 :command nil}
              (parse-update (mock-update 456 text)))))))
 
 (deftest test-processor
@@ -87,24 +87,24 @@
                 "To log into your account, send "
                 "/login command. Send /help to "
                 "list all available commands.")
-           (:reply (process-update {:user 123 :command :start}))))
+           (:reply (process-update {:chat 123 :command :start}))))
 
     (is (= (str "I can understand these commands:\n"
                 "/login - get link to log into my service\n"
                 "/logout - log out of my service\n"
                 "/help - display this help message again")
-           (:reply (process-update {:user 345 :command :help}))))
+           (:reply (process-update {:chat 345 :command :help}))))
 
-    (let [user 567]
+    (let [chat 567]
       (is (= "Logged in successfully!"
-             (:reply (process-update {:user user :command :login}))))
+             (:reply (process-update {:chat chat :command :login}))))
       (is (= "You're logged in already."
-             (:reply (process-update {:user user :command :login}))))
-      (swap! sessions dissoc user))
+             (:reply (process-update {:chat chat :command :login}))))
+      (swap! sessions dissoc chat))
 
-    (let [user 789]
+    (let [chat 789]
       (is (= "You're logged out already."
-             (:reply (process-update {:user user :command :logout}))))
-      (swap! sessions assoc user {})
+             (:reply (process-update {:chat chat :command :logout}))))
+      (swap! sessions assoc chat {})
       (is (= "Logged out successfully!"
-             (:reply (process-update {:user user :command :logout})))))))
+             (:reply (process-update {:chat chat :command :logout})))))))

@@ -21,9 +21,9 @@
 
 (defn parse-update [update]
   (let [update-map (json/parse-string update)
-        user       (get-in update-map ["message" "from" "id"])
+        chat       (get-in update-map ["message" "chat" "id"])
         command    (get-in update-map ["message" "text"])]
-    {:user user
+    {:chat chat
      :command (some-> (re-find #"^/[a-z]+$" command)
                       (subs 1)
                       (keyword))}))
@@ -51,17 +51,17 @@
        (assoc umap :reply)))
 
 (defmethod process-update :login
-  [{user :user :as umap}]
-  (->> (if-not (contains? @sessions user)
-         (do (swap! sessions assoc user {})
+  [{chat :chat :as umap}]
+  (->> (if-not (contains? @sessions chat)
+         (do (swap! sessions assoc chat {})
              "Logged in successfully!")
          "You're logged in already.")
        (assoc umap :reply)))
 
 (defmethod process-update :logout
-  [{user :user :as umap}]
-  (->> (if (contains? @sessions user)
-         (do (swap! sessions dissoc user)
+  [{chat :chat :as umap}]
+  (->> (if (contains? @sessions chat)
+         (do (swap! sessions dissoc chat)
              "Logged out successfully!")
          "You're logged out already.")
        (assoc umap :reply)))
