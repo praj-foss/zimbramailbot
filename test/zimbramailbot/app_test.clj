@@ -1,20 +1,33 @@
 (ns zimbramailbot.app-test
   (:require [clojure.test :refer :all]
             [ring.mock.request :as mock]
+            [ring.util.response :as res]
             [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
             [org.httpkit.server :as s]
-            [compojure.core :refer [routes GET]]
+            [compojure.core :refer [routes GET POST]]
             [compojure.route :as route]
             [cheshire.core :as json]
             [zimbramailbot.app :refer :all]))
 
 (def ^:private mock-telegram
   (wrap-defaults
-   (routes (GET "/setWebhook" {body :body content :content-type}
-                (if (= "application/json" content)
-                  {:status 200 :body body}
-                  {:status 400}))
-           (route/not-found "Invalid"))
+   (routes
+    (GET "/setWebhook" {body :body content :content-type}
+         (if (= "application/json" content)
+           {:status 200 :body body}
+           {:status 400}))
+    (POST "/sendMessage" req
+          (let [content (:content-type req)
+                body    (json/parse-string (:body req))]
+            (if (and (= "application/json" content)
+                     (contains? body "chat_id")
+                     (contains? body "text"))
+              (-> (json/generate-string body)
+                  (res/response)
+                  (res/content-type "application/json")
+                  (res/status 200))
+              (res/status 400))))
+    (route/not-found "Invalid"))
    api-defaults))
 
 (deftest test-set-webhook
