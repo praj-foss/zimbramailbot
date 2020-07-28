@@ -72,6 +72,13 @@
             "to list all available commands.")
        (assoc umap :reply)))
 
+(defn send-message [api-url {chat :chat reply :reply}]
+  @(http/post (str api-url "/sendMessage")
+              {:headers {"Content-Type" "application/json"}
+               :as      :text
+               :body    (json/generate-string
+                         {"chat_id" chat "text" reply})}))
+
 (defn- ipv4? [addr]
   (-> (str "^((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}"
            "(0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)$")

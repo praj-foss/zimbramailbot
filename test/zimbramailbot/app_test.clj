@@ -16,9 +16,8 @@
          (if (= "application/json" content)
            {:status 200 :body body}
            {:status 400}))
-    (POST "/sendMessage" req
-          (let [content (:content-type req)
-                body    (json/parse-string (:body req))]
+    (POST "/sendMessage" {body-json :body content :content-type}
+          (let [body (json/parse-string (slurp body-json))]
             (if (and (= "application/json" content)
                      (contains? body "chat_id")
                      (contains? body "text"))
@@ -31,8 +30,8 @@
    api-defaults))
 
 (deftest test-set-webhook
-  (let [stopper (s/run-server mock-telegram {:port 8080})]
-    (try (let [res (set-webhook "http://localhost:8080" "example")]
+  (let [stopper (s/run-server mock-telegram {:port 8180})]
+    (try (let [res (set-webhook "http://localhost:8180" "example")]
            (is (= 200 (:status res))
                "Must receive HTTP OK on proper Content-Type")
            (is (= {"url" "example"} (json/parse-string (:body res)))
@@ -121,3 +120,14 @@
       (swap! sessions assoc chat {})
       (is (= "Logged out successfully!"
              (:reply (process-update {:chat chat :command :logout})))))))
+
+(deftest test-send-message
+  (let [stopper (s/run-server mock-telegram {:port 8180})]
+    (try (let [res (send-message "http://localhost:8180"
+                                 {:chat 123 :reply "Smalltalk"})]
+           (is (= 200 (:status res))
+               "Must receive HTTP OK on proper Content-Type")
+           (is (= {"chat_id" 123 "text" "Smalltalk"}
+                  (json/parse-string (:body res)))
+               "Must include chat_id and text in request body"))
+         (finally (stopper)))))
