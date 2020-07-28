@@ -95,5 +95,10 @@
                 "/help - display this help message again")
            (:reply (process-update {:user 345 :command :help}))))
 
-    (is (= "Logged out successfully!"
-           (:reply (process-update {:user 567 :command :logout}))))))
+    (let [user 567 session {}]
+      (is (= "You're logged out already."
+             (:reply (process-update {:user user :command :logout}))))
+      (swap! sessions assoc user session)
+      (is (= "Logged out successfully!"
+             (:reply (process-update {:user user :command :logout}))))
+      (is (not (contains? @sessions user))))))

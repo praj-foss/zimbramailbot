@@ -28,6 +28,8 @@
                       (subs 1)
                       (keyword))}))
 
+(def sessions (atom {}))
+
 (defmulti process-update #(:command %))
 
 (defmethod process-update :start
@@ -46,6 +48,14 @@
             "/login - get link to log into my service\n"
             "/logout - log out of my service\n"
             "/help - display this help message again")
+       (assoc umap :reply)))
+
+(defmethod process-update :logout
+  [{user :user :as umap}]
+  (->> (if (and (contains? @sessions user)
+                (swap! sessions dissoc user))
+         "Logged out successfully!"
+         "You're logged out already.")
        (assoc umap :reply)))
 
 (defmethod process-update :default
