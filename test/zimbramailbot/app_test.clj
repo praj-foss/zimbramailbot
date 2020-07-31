@@ -41,7 +41,8 @@
     (try (let [res (set-webhook "http://localhost:8180" "example")]
            (is (= 200 (:status res))
                "Must receive HTTP OK on proper Content-Type")
-           (is (= {"url" "example"} (json/parse-string (:body res)))
+           (is (= {"url" "example" "allowed_updates" ["message"]}
+                  (json/parse-string (:body res)))
                "Must include webhook url in request body"))
          (finally (stopper)))))
 

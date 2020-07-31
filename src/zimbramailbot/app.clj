@@ -16,7 +16,8 @@
 (defn set-webhook [api-url hook-url]
   @(http/post (str api-url "/setWebhook")
               {:headers {"Content-Type" "application/json"}
-               :body    (json/generate-string {"url" hook-url})}))
+               :body    (json/generate-string
+                         {"url" hook-url "allowed_updates" ["message"]})}))
 
 (defn parse-update [update]
   (let [update-map (json/parse-string update)
