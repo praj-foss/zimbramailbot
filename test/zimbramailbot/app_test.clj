@@ -46,26 +46,6 @@
                "Must include webhook url in request body"))
          (finally (stopper)))))
 
-(deftest test-update
-  (let [status-for #(-> (mock/request :post "/updates")
-                        (mock/header "X-Forwarded-For" %)
-                        (handler)
-                        (:status))]
-    (testing "authorized Telegram IPs"
-      (doseq [ip ["149.154.160.0"
-                  "149.154.175.255"
-                  "91.108.4.0"
-                  "91.108.7.255"]]
-        (is (= 200 (status-for ip)))))
-    (testing "other random IPs"
-      (doseq [ip ["172.217.167.164"
-                  "104.91.50.11"
-                  "2001:db8:85a3:8d3:1319:8a2e:370:7348"]]
-        (is (= 404 (status-for ip))))))
-  (is (= 404 (:status
-              (handler (mock/request :post "/updates"))))
-      "localhost is unauthorized for posting updates"))
-
 (defn- mock-update [id text]
   (json/generate-string
    {"update_id" 1000
@@ -85,19 +65,18 @@
 
 (deftest test-parser
   (testing "valid commands"
-    (doseq [[text command] {"/start"  :start
-                            "/help"   :help
-                            "/login"  :login
-                            "/logout" :logout}]
-      (is (= {:chat 123 :command command}
-             (parse-update (mock-update 123 text))))))
+    (are [command text] (= {:chat 123 :command command}
+                           (parse-update (mock-update 123 text)))
+      :start  "/start"
+      :help   "/help"
+      :valid  "/valid"))
   (testing "invalid commands"
-    (doseq [text ["/INVALID"
-                  "/more invalid"
-                  "more invalid"
-                  "//quit"]]
-      (is (= {:chat 456 :command nil}
-             (parse-update (mock-update 456 text)))))))
+    (are [text] (= {:chat 456 :command nil}
+                   (parse-update (mock-update 456 text)))
+      "/INVALID"
+      "/also invalid"
+      "very_invalid"
+      "/1234")))
 
 (deftest test-processor
   (testing "available commands"
@@ -139,3 +118,22 @@
                   (json/parse-string (:body res)))
                "Must include chat_id and text in request body"))
          (finally (stopper)))))
+
+(deftest test-updates-route
+  (let [resp-for
+        #(-> (mock/request :post "/updates")
+             (as-> req
+                 (if %1 (mock/header req "X-Forwarded-For" %1) req))
+             (handler))]
+    (testing "authorized Telegram IPs"
+      (are [ip] (= 200 (:status (resp-for ip)))
+        "149.154.160.0"
+        "149.154.175.255"
+        "91.108.4.0"
+        "91.108.7.255"))
+    (testing "other IPs"
+      (are [ip] (= 404 (:status (resp-for ip)))
+        "104.91.50.11"
+        "2001:db8:85a3:8d3:1319:8a2e:370:7348"
+        nil))))
+
