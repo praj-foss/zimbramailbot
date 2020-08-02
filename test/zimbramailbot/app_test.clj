@@ -1,5 +1,6 @@
 (ns zimbramailbot.app-test
   (:require [clojure.test :refer :all]
+            [clojure.core.async :as y]
             [ring.mock.request :as mock]
             [ring.util.response :as res]
             [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
@@ -122,6 +123,7 @@
 (deftest test-updates-route
   (let [resp-for
         #(-> (mock/request :post "/updates")
+             (mock/body (mock-update 777 "Sample text"))
              (as-> req
                  (if %1 (mock/header req "X-Forwarded-For" %1) req))
              (handler))]
@@ -130,7 +132,16 @@
         "149.154.160.0"
         "149.154.175.255"
         "91.108.4.0"
-        "91.108.7.255"))
+        "91.108.7.255")
+      (testing "request timeout"
+        (let [old  updates-chan
+              _    (alter-var-root #'updates-chan (fn [_] (y/chan)))
+              resp (resp-for "91.108.4.100")]
+          (is (= 200 (:status resp)))
+          (is (= {"chat_id" 777
+                  "text" "My server is down. Please try again later."}
+                 (json/parse-string (:body resp))))
+          (alter-var-root #'updates-chan (fn [_] old)))))
     (testing "other IPs"
       (are [ip] (= 404 (:status (resp-for ip)))
         "104.91.50.11"

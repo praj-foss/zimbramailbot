@@ -10,7 +10,8 @@
              :refer [wrap-forwarded-remote-addr]]
             [ring.middleware.reload :refer [wrap-reload]]
             [ring.middleware.defaults
-             :refer [wrap-defaults api-defaults]])
+             :refer [wrap-defaults api-defaults]]
+            [clojure.core.async :as y])
   (:gen-class))
 
 (defn set-webhook [api-url hook-url]
@@ -19,10 +20,9 @@
                :body    (json/generate-string
                          {"url" hook-url "allowed_updates" ["message"]})}))
 
-(defn parse-update [update]
-  (let [update-map (json/parse-string update)
-        chat       (get-in update-map ["message" "chat" "id"])
-        command    (get-in update-map ["message" "text"])]
+(defn parse-update [umap]
+  (let [chat       (get-in umap ["message" "chat" "id"])
+        command    (get-in umap ["message" "text"])]
     {:chat chat
      :command (some-> (re-find #"^/[a-z]+$" command)
                       (subs 1)
@@ -78,6 +78,26 @@
                :body    (json/generate-string
                          {"chat_id" chat "text" reply})}))
 
+(def updates-chan (y/chan 32))
+
+(def updates-route
+  (wrap-forwarded-remote-addr
+   (POST "/updates" {ip :remote-addr body :body}
+         (if (and (ipv4? ip)
+                  (or (cidr/in-range? ip "149.154.160.0/20")
+                      (cidr/in-range? ip "91.108.4.0/22")))
+           (let [umap  (json/parse-string (slurp body))
+                 late  (y/timeout 3000)
+                 [v c] (y/alts!! [late [updates-chan umap]])]
+             (if (= late c)
+               (-> {"chat_id" (get-in umap ["message" "chat" "id"])
+                    "text"    "My server is down. Please try again later."}
+                   (json/generate-string)
+                   (res/response)
+                   (res/content-type "application/json")
+                   (res/status 200))
+               (res/status 200)))))))
+
 (defn- ipv4? [addr]
   (-> (str "^((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}"
            "(0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)$")
@@ -86,12 +106,7 @@
       (some?)))
 
 (defroutes app-routes
-  (wrap-forwarded-remote-addr
-   (POST "/updates" {ip :remote-addr}
-         (if (and (ipv4? ip)
-                  (or (cidr/in-range? ip "149.154.160.0/20")
-                      (cidr/in-range? ip "91.108.4.0/22")))
-           (res/status 200))))
+  updates-route
   (route/not-found "Not Found"))
 
 (def handler
