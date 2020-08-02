@@ -65,19 +65,21 @@
      "text" text}}))
 
 (deftest test-parser
-  (testing "valid commands"
-    (are [command text] (= {:chat 123 :command command}
-                           (parse-update (mock-update 123 text)))
-      :start  "/start"
-      :help   "/help"
-      :valid  "/valid"))
-  (testing "invalid commands"
-    (are [text] (= {:chat 456 :command nil}
-                   (parse-update (mock-update 456 text)))
-      "/INVALID"
-      "/also invalid"
-      "very_invalid"
-      "/1234")))
+  (let [parse-command #(-> (mock-update 123 %)
+                           (json/parse-string)
+                           (parse-update)
+                           (:command))]
+    (testing "valid commands"
+      (are [command text] (= command (parse-command text))
+        :start  "/start"
+        :help   "/help"
+        :valid  "/valid"))
+    (testing "invalid commands"
+      (are [text] (= nil (parse-command text))
+        "/INVALID"
+        "/also invalid"
+        "very_invalid"
+        "/1234"))))
 
 (deftest test-processor
   (testing "available commands"
@@ -138,8 +140,9 @@
               _    (alter-var-root #'updates-chan (fn [_] (y/chan)))
               resp (resp-for "91.108.4.100")]
           (is (= 200 (:status resp)))
-          (is (= {"chat_id" 777
-                  "text" "My server is down. Please try again later."}
+          (is (= {"method"  "sendMessage"
+                  "chat_id" 777
+                  "text"    "My server is down. Please try again later."}
                  (json/parse-string (:body resp))))
           (alter-var-root #'updates-chan (fn [_] old)))))
     (testing "other IPs"

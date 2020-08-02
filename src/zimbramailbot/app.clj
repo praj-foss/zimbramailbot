@@ -80,6 +80,13 @@
 
 (def updates-chan (y/chan 32))
 
+(defn- ipv4? [addr]
+  (-> (str "^((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}"
+           "(0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)$")
+      (re-pattern)
+      (re-find addr)
+      (some?)))
+
 (def updates-route
   (wrap-forwarded-remote-addr
    (POST "/updates" {ip :remote-addr body :body}
@@ -90,20 +97,14 @@
                  late  (y/timeout 3000)
                  [v c] (y/alts!! [late [updates-chan umap]])]
              (if (= late c)
-               (-> {"chat_id" (get-in umap ["message" "chat" "id"])
+               (-> {"method"  "sendMessage"
+                    "chat_id" (get-in umap ["message" "chat" "id"])
                     "text"    "My server is down. Please try again later."}
                    (json/generate-string)
                    (res/response)
                    (res/content-type "application/json")
                    (res/status 200))
                (res/status 200)))))))
-
-(defn- ipv4? [addr]
-  (-> (str "^((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}"
-           "(0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)$")
-      (re-pattern)
-      (re-find addr)
-      (some?)))
 
 (defroutes app-routes
   updates-route
