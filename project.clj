@@ -1,4 +1,4 @@
-(defproject in.praj/zimbramailbot "0.0.3-SNAPSHOT"
+(defproject in.praj/zimbramailbot "0.0.4-SNAPSHOT"
   :description "Telegram bot for Zimbra mail server"
   :url "https://github.com/praj-foss/zimbramailbot"
 
