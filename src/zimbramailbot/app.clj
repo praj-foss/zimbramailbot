@@ -83,11 +83,18 @@
 (defn processor-chan [in-chan size]
   (let [out-chan (y/chan size)]
     (y/go-loop []
-      (when-some [u (y/<! in-chan)]
-        (y/>! out-chan (-> (parse-update u)
-                           (process-update)))
-        (recur)))
+      (if-some [u (y/<! in-chan)]
+        (do (y/>! out-chan (-> (parse-update u)
+                               (process-update)))
+            (recur))
+        (y/close! out-chan)))
     out-chan))
+
+(defn sender-chan [in-chan api-url]
+  (y/go-loop []
+    (when-some [r (y/<! in-chan)]
+      (send-message api-url r)
+      (recur))))
 
 (defn- ipv4? [addr]
   (-> (str "^((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}"

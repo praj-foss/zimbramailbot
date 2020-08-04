@@ -159,4 +159,25 @@
       (is (= {:parsed true :processed true}
              (y/alt!! out  ([v] v)
                       late :late))
-          "Must call parse-update and process-update"))))
+          "Must call parse-update and process-update")
+      (is (nil? (do (y/close! in)
+                    (y/alt!! out  ([v] v)
+                             late :late)))
+          "Must close output when input closes"))))
+
+(deftest test-sender-pipe
+  (let [in   (y/chan)
+        out  (sender-chan in "example")
+        late (y/timeout 100)
+        sent (atom [])]
+    (with-redefs [send-message #(reset! sent [%1 %2])]
+      (is (= :passed
+             (y/alt!! [[in {}]] :passed
+                      late      :late))
+          "Must keep reading from input channel")
+      (is (= ["example" {}] @sent)
+          "Must call send-message")
+      (is (nil? (do (y/close! in)
+                    (y/alt!! out  ([v] v)
+                             late :late)))
+          "Must exit when input closes"))))
