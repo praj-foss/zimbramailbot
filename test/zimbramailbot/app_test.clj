@@ -145,3 +145,18 @@
         "104.91.50.11"
         "2001:db8:85a3:8d3:1319:8a2e:370:7348"
         nil))))
+
+(deftest test-processor-pipe
+  (let [in   (y/chan)
+        out  (processor-chan in 1)
+        late (y/timeout 100)]
+    (with-redefs [parse-update   #(assoc % :parsed true)
+                  process-update #(assoc % :processed true)]
+      (is (= :passed
+             (y/alt!! [[in {}]] :passed
+                      late      :late))
+          "Must keep reading from input channel")
+      (is (= {:parsed true :processed true}
+             (y/alt!! out  ([v] v)
+                      late :late))
+          "Must call parse-update and process-update"))))

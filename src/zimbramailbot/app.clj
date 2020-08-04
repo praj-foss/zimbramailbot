@@ -80,6 +80,15 @@
 
 (def ^:private updates-chan (y/chan 32))
 
+(defn processor-chan [in-chan size]
+  (let [out-chan (y/chan size)]
+    (y/go-loop []
+      (when-some [u (y/<! in-chan)]
+        (y/>! out-chan (-> (parse-update u)
+                           (process-update)))
+        (recur)))
+    out-chan))
+
 (defn- ipv4? [addr]
   (-> (str "^((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}"
            "(0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)$")
