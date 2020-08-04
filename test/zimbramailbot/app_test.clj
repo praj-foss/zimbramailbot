@@ -136,18 +136,12 @@
         "91.108.4.0"
         "91.108.7.255")
       (testing "request timeout"
-        (let [old  updates-chan
-              _    (alter-var-root #'updates-chan (fn [_] (y/chan)))
-              resp (resp-for "91.108.4.100")]
-          (is (= 200 (:status resp)))
-          (is (= {"method"  "sendMessage"
-                  "chat_id" 777
-                  "text"    "My server is down. Please try again later."}
-                 (json/parse-string (:body resp))))
-          (alter-var-root #'updates-chan (fn [_] old)))))
+        (with-redefs [zimbramailbot.app/updates-chan (y/chan)]
+          (let [resp (resp-for "91.108.4.100")]
+            (is (= 503 (:status resp)))
+            (is (= "60" (get-in resp [:headers "Retry-After"])))))))
     (testing "other IPs"
       (are [ip] (= 404 (:status (resp-for ip)))
         "104.91.50.11"
         "2001:db8:85a3:8d3:1319:8a2e:370:7348"
         nil))))
-

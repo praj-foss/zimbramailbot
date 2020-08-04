@@ -78,7 +78,7 @@
                :body    (json/generate-string
                          {"chat_id" chat "text" reply})}))
 
-(def updates-chan (y/chan 32))
+(def ^:private updates-chan (y/chan 32))
 
 (defn- ipv4? [addr]
   (-> (str "^((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}"
@@ -93,18 +93,10 @@
          (if (and (ipv4? ip)
                   (or (cidr/in-range? ip "149.154.160.0/20")
                       (cidr/in-range? ip "91.108.4.0/22")))
-           (let [umap  (json/parse-string (slurp body))
-                 late  (y/timeout 3000)
-                 [v c] (y/alts!! [late [updates-chan umap]])]
-             (if (= late c)
-               (-> {"method"  "sendMessage"
-                    "chat_id" (get-in umap ["message" "chat" "id"])
-                    "text"    "My server is down. Please try again later."}
-                   (json/generate-string)
-                   (res/response)
-                   (res/content-type "application/json")
-                   (res/status 200))
-               (res/status 200)))))))
+           (y/alt!!
+             [[updates-chan body]] (res/status 200)
+             (y/timeout 2000)      (-> (res/status 503)
+                                       (res/header "Retry-After" 60)))))))
 
 (defroutes app-routes
   updates-route
