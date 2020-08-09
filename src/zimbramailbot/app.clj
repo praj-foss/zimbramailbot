@@ -8,7 +8,6 @@
             [ring.util.response :as res]
             [ring.middleware.proxy-headers
              :refer [wrap-forwarded-remote-addr]]
-            [ring.middleware.reload :refer [wrap-reload]]
             [ring.middleware.defaults
              :refer [wrap-defaults api-defaults]]
             [clojure.core.async :as y])
@@ -122,4 +121,4 @@
   (wrap-defaults app-routes api-defaults))
 
 (defn -main [& args]
-  (run-server (wrap-reload #'handler) {:port 8080}))
+  (run-server handler {:port 8080}))
