@@ -120,5 +120,11 @@
 (def handler
   (wrap-defaults app-routes api-defaults))
 
+(def ^:private server-stopper (atom nil))
+
+(defn start-server [handler port]
+  (if-not @server-stopper
+    (reset! server-stopper (run-server handler {:port port}))))
+
 (defn -main [& args]
-  (run-server handler {:port 8080}))
+  (start-server handler 8080))

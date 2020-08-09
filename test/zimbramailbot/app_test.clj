@@ -181,3 +181,15 @@
                     (y/alt!! out  ([v] v)
                              late :late)))
           "Must exit when input closes"))))
+
+(deftest test-web-server
+  (testing "unstarted server"
+    (let [result       (atom nil)
+          stopper-atom (atom nil)
+          stopper      #(:stopper)]
+      (with-redefs [zimbramailbot.app/server-stopper stopper-atom
+                    s/run-server #(do (reset! result {:app %1 :opts %2})
+                                      stopper)]
+        (start-server :my-handler 8181)
+        (is (= {:app :my-handler :opts {:port 8181}} @result))
+        (is (= stopper @stopper-atom))))))
