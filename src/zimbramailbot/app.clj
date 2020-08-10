@@ -10,7 +10,8 @@
              :refer [wrap-forwarded-remote-addr]]
             [ring.middleware.defaults
              :refer [wrap-defaults api-defaults]]
-            [clojure.core.async :as y])
+            [clojure.core.async :as y]
+            [environ.core :refer [env]])
   (:gen-class))
 
 (defn set-webhook [api-url hook-url]
@@ -131,13 +132,18 @@
     (@server-stopper :timeout timeout)
     (reset! server-stopper nil)))
 
-(defn validate [config]
+(defn read-config []
+  (reduce #(assoc %1 %2 (env %2))
+          {}
+          [:token]))
+
+(defn validate-config [config]
   (let [reqd   #{:token}
         valid? (fn [[k v]]
                  (and (reqd k) (some? v)))]
-    (and (not-empty config)
-         (every? valid? config)
-         config)))
+    (if (and (not-empty config)
+             (every? valid? config))
+      config)))
 
 (defn -main [& args]
   (start-server handler 8080))

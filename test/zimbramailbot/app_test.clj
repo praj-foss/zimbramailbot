@@ -8,6 +8,7 @@
             [compojure.core :refer [routes GET POST]]
             [compojure.route :as route]
             [cheshire.core :as json]
+            [environ.core :as e]
             [zimbramailbot.app :refer :all]))
 
 (def ^:private mock-telegram
@@ -212,11 +213,17 @@
         (is (= [:timeout 1000] (fetch-reset params)))
         (is (nil? (fetch-reset stopper)))))))
 
+(deftest test-read-config
+  (let [values {:token "ABCD"}]
+    (with-redefs [e/env #(% values)]
+      (is (= values (read-config))))))
+
 (deftest test-validate-config
   (testing "valid config"
-    (is (some? (validate {:token "ABCD"}))))
+    (is (some? (validate-config {:token "ABCD"}))))
   (testing "invalid config"
-    (are [c] (not (validate c))
+    (are [c] (nil? (validate-config c))
       {}
       nil
-      {:token nil})))
+      {:token nil}
+      {:random :key})))
