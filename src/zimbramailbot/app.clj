@@ -27,7 +27,7 @@
                       (subs 1)
                       (keyword))}))
 
-(def sessions (atom {}))
+(def ^:private sessions (atom {}))
 
 (defmulti process-update #(:command %))
 

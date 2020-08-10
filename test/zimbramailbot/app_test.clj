@@ -82,34 +82,37 @@
         "/1234"))))
 
 (deftest test-processor
-  (testing "available commands"
-    (is (= (str "Hello! I'm Zimbra Mailbot.\n"
-                "I can forward emails from your "
-                "Zimbra mailbox to this chat. "
-                "To log into your account, send "
-                "/login command. Send /help to "
-                "list all available commands.")
-           (:reply (process-update {:chat 123 :command :start}))))
+  (let [sessions  (atom {})
+        reply-for #(:reply (process-update {:chat %1 :command %2}))]
+    (with-redefs [zimbramailbot.app/sessions sessions]
+      (testing "available commands"
+        (is (= (str "Hello! I'm Zimbra Mailbot.\n"
+                    "I can forward emails from your "
+                    "Zimbra mailbox to this chat. "
+                    "To log into your account, send "
+                    "/login command. Send /help to "
+                    "list all available commands.")
+               (reply-for 123 :start)))
 
-    (is (= (str "I can understand these commands:\n"
-                "/login - get link to log into my service\n"
-                "/logout - log out of my service\n"
-                "/help - display this help message again")
-           (:reply (process-update {:chat 345 :command :help}))))
+        (is (= (str "I can understand these commands:\n"
+                    "/login - get link to log into my service\n"
+                    "/logout - log out of my service\n"
+                    "/help - display this help message again")
+               (reply-for 345 :help)))
 
-    (let [chat 567]
-      (is (= "Logged in successfully!"
-             (:reply (process-update {:chat chat :command :login}))))
-      (is (= "You're logged in already."
-             (:reply (process-update {:chat chat :command :login}))))
-      (swap! sessions dissoc chat))
+        (let [chat 567]
+          (is (= "Logged in successfully!"
+                 (reply-for chat :login)))
+          (is (= "You're logged in already."
+                 (reply-for chat :login)))
+          (swap! sessions dissoc chat))
 
-    (let [chat 789]
-      (is (= "You're logged out already."
-             (:reply (process-update {:chat chat :command :logout}))))
-      (swap! sessions assoc chat {})
-      (is (= "Logged out successfully!"
-             (:reply (process-update {:chat chat :command :logout})))))))
+        (let [chat 789]
+          (is (= "You're logged out already."
+                 (reply-for chat :logout)))
+          (swap! sessions assoc chat {})
+          (is (= "Logged out successfully!"
+                 (reply-for chat :logout))))))))
 
 (deftest test-send-message
   (let [stopper (s/run-server mock-telegram {:port 8180})]
