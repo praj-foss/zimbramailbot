@@ -182,14 +182,29 @@
                              late :late)))
           "Must exit when input closes"))))
 
-(deftest test-web-server
-  (testing "unstarted server"
-    (let [result       (atom nil)
-          stopper-atom (atom nil)
-          stopper      #(:stopper)]
-      (with-redefs [zimbramailbot.app/server-stopper stopper-atom
-                    s/run-server #(do (reset! result {:app %1 :opts %2})
-                                      stopper)]
-        (start-server :my-handler 8181)
-        (is (= {:app :my-handler :opts {:port 8181}} @result))
-        (is (= stopper @stopper-atom))))))
+(deftest test-server-instance
+  (let [params      (atom nil)
+        stopper     (atom nil)
+        stopper-fn  #(reset! params [%1 %2])
+        runner-fn   #(do (reset! params [%1 %2]) stopper-fn)
+        fetch-reset #(first (reset-vals! % nil))]
+    (with-redefs [zimbramailbot.app/server-stopper stopper
+                  s/run-server runner-fn]
+      (testing "starting a new server"
+        (start-server :handler-1 8181)
+        (is (= [:handler-1 {:port 8181}] (fetch-reset params)))
+        (is (= stopper-fn (fetch-reset stopper))))
+      (testing "restarting a running server"
+        (reset! stopper stopper-fn)
+        (start-server :handler-2 8182)
+        (is (nil? (fetch-reset params)))
+        (is (= stopper-fn (fetch-reset stopper))))
+      (testing "stopping a new server"
+        (stop-server 100)
+        (is (nil? (fetch-reset params)))
+        (is (not= stopper-fn (fetch-reset stopper))))
+      (testing "stopping a running server"
+        (reset! stopper stopper-fn)
+        (stop-server 1000)
+        (is (= [:timeout 1000] (fetch-reset params)))
+        (is (nil? (fetch-reset stopper)))))))

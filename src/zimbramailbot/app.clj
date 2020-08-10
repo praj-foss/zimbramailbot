@@ -126,5 +126,10 @@
   (if-not @server-stopper
     (reset! server-stopper (run-server handler {:port port}))))
 
+(defn stop-server [timeout]
+  (when @server-stopper
+    (@server-stopper :timeout timeout)
+    (reset! server-stopper nil)))
+
 (defn -main [& args]
   (start-server handler 8080))
