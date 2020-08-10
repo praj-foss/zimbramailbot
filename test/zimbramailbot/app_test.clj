@@ -211,3 +211,12 @@
         (stop-server 1000)
         (is (= [:timeout 1000] (fetch-reset params)))
         (is (nil? (fetch-reset stopper)))))))
+
+(deftest test-validate-config
+  (testing "valid config"
+    (is (some? (validate {:token "ABCD"}))))
+  (testing "invalid config"
+    (are [c] (not (validate c))
+      {}
+      nil
+      {:token nil})))

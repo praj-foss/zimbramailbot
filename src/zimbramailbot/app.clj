@@ -131,5 +131,13 @@
     (@server-stopper :timeout timeout)
     (reset! server-stopper nil)))
 
+(defn validate [config]
+  (let [reqd   #{:token}
+        valid? (fn [[k v]]
+                 (and (reqd k) (some? v)))]
+    (and (not-empty config)
+         (every? valid? config)
+         config)))
+
 (defn -main [& args]
   (start-server handler 8080))
