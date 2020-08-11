@@ -147,4 +147,11 @@
       config)))
 
 (defn -main [& args]
-  (start-server handler 8080))
+  (if-let [conf (validate-config (read-config))]
+    (do (-> updates-chan
+            (processor-chan 32)
+            (sender-chan (str "https://api.telegram.org/bot"
+                              (:token conf))))
+        (start-server handler 8080)
+        (println "Server started on port 8080"))
+    (println "Invalid config: Failed to start server")))
