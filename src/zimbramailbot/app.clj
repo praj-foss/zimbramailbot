@@ -20,9 +20,10 @@
                :body    (json/generate-string
                          {"url" hook-url "allowed_updates" ["message"]})}))
 
-(defn parse-update [umap]
-  (let [chat       (get-in umap ["message" "chat" "id"])
-        command    (get-in umap ["message" "text"])]
+(defn parse-update [body]
+  (let [upd     (json/parse-string body)
+        chat    (get-in upd ["message" "chat" "id"])
+        command (get-in upd ["message" "text"])]
     {:chat chat
      :command (some-> (re-find #"^/[a-z]+$" command)
                       (subs 1)
@@ -110,9 +111,9 @@
                   (or (cidr/in-range? ip "149.154.160.0/20")
                       (cidr/in-range? ip "91.108.4.0/22")))
            (y/alt!!
-             [[updates-chan body]] (res/status 200)
-             (y/timeout 2000)      (-> (res/status 503)
-                                       (res/header "Retry-After" 60)))))))
+             [[updates-chan (slurp body)]] (res/status 200)
+             (y/timeout 2000) (-> (res/status 503)
+                                  (res/header "Retry-After" 60)))))))
 
 (defroutes app-routes
   updates-route

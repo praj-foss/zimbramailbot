@@ -21,4 +21,6 @@
           :env  {:environment "development"}}
 
    :prod {:env  {:environment "production"}
-          :aot  :all}})
+          :aot  :all}
+
+   :uberjar {:aot :all}})

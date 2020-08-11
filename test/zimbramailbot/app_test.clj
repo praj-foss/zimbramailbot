@@ -67,7 +67,6 @@
 
 (deftest test-parser
   (let [parse-command #(-> (mock-update 123 %)
-                           (json/parse-string)
                            (parse-update)
                            (:command))]
     (testing "valid commands"
