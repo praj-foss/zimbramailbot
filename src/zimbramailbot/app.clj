@@ -143,7 +143,7 @@
     (reset! server-stopper nil)))
 
 (def ^:private config-keys
-  #{:token :domain})
+  #{:token :domain :port})
 
 (defn read-config []
   (reduce #(assoc %1 %2 (env %2)) {} config-keys))
@@ -157,10 +157,13 @@
 
 (defn -main [& args]
   (if-let [conf (validate-config (read-config))]
-    (do (-> updates-chan
-            (processor-chan 32)
-            (sender-chan (str "https://api.telegram.org/bot"
-                              (:token conf))))
-        (start-server handler 8080)
-        (println "Server started on port 8080"))
+    (let [api-url  (str "https://api.telegram.org/bot" (:token conf))
+          hook-url (str (:domain conf) "/updates")
+          port     (Integer/parseInt (:port conf))]
+      (do (set-webhook api-url hook-url)
+          (-> updates-chan
+              (processor-chan 32)
+              (sender-chan api-url))
+          (start-server handler port)
+          (println "Server started on port" port)))
     (println "Invalid config: Failed to start server")))

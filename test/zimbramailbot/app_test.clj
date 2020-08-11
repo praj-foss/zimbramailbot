@@ -221,17 +221,20 @@
 
 (deftest test-read-config
   (let [values {:token  "ABCD"
-                :domain "example.com"}]
+                :domain "https://example.com"
+                :port   "8080"}]
     (with-redefs [e/env #(% values)]
       (is (= values (read-config))))))
 
 (deftest test-validate-config
   (testing "valid config"
     (is (some? (validate-config {:token  "ABCD"
-                                 :domain "example.com"}))))
+                                 :domain "https://example.com"
+                                 :port   "8080"}))))
   (testing "invalid config"
     (are [c] (nil? (validate-config c))
       {}
       nil
       {:token nil}
+      {:port nil}
       {:random :key})))
