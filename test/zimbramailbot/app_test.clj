@@ -125,6 +125,13 @@
                "Must include chat_id and text in request body"))
          (finally (stopper)))))
 
+(deftest test-main-route
+  (let [resp (handler (mock/request :get "/"))]
+    (is (= 200 (:status resp)))
+    (is (= (str "<a href=\"https://t.me/zimbramailbot\">"
+                "@zimbramailbot</a>")
+           (:body resp)))))
+
 (deftest test-updates-route
   (let [resp-for
         #(-> (mock/request :post "/updates")

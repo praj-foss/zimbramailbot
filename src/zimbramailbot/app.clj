@@ -104,23 +104,32 @@
       (re-find addr)
       (some?)))
 
+(def main-route
+  (GET "/" []
+       (-> (str "<a href=\"https://t.me/zimbramailbot\">"
+                "@zimbramailbot</a>")
+           (res/response)
+           (res/content-type "text/html"))))
+
 (def updates-route
-  (wrap-forwarded-remote-addr
-   (POST "/updates" {ip :remote-addr body :body}
-         (if (and (ipv4? ip)
-                  (or (cidr/in-range? ip "149.154.160.0/20")
-                      (cidr/in-range? ip "91.108.4.0/22")))
-           (y/alt!!
-             [[updates-chan (slurp body)]] (res/status 200)
-             (y/timeout 2000) (-> (res/status 503)
-                                  (res/header "Retry-After" 60)))))))
+  (POST "/updates" {ip :remote-addr body :body}
+        (if (and (ipv4? ip)
+                 (or (cidr/in-range? ip "149.154.160.0/20")
+                     (cidr/in-range? ip "91.108.4.0/22")))
+          (y/alt!!
+            [[updates-chan (slurp body)]] (res/status 200)
+            (y/timeout 2000) (-> (res/status 503)
+                                 (res/header "Retry-After" 60))))))
 
 (defroutes app-routes
+  main-route
   updates-route
   (route/not-found "Not Found"))
 
 (def handler
-  (wrap-defaults app-routes api-defaults))
+  (-> app-routes
+      (wrap-forwarded-remote-addr)
+      (wrap-defaults api-defaults)))
 
 (def ^:private server-stopper (atom nil))
 
