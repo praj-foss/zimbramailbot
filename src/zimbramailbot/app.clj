@@ -132,15 +132,15 @@
     (@server-stopper :timeout timeout)
     (reset! server-stopper nil)))
 
+(def ^:private config-keys
+  #{:token :domain})
+
 (defn read-config []
-  (reduce #(assoc %1 %2 (env %2))
-          {}
-          [:token]))
+  (reduce #(assoc %1 %2 (env %2)) {} config-keys))
 
 (defn validate-config [config]
-  (let [reqd   #{:token}
-        valid? (fn [[k v]]
-                 (and (reqd k) (some? v)))]
+  (let [valid? (fn [[k v]]
+                 (and (config-keys k) (some? v)))]
     (if (and (not-empty config)
              (every? valid? config))
       config)))

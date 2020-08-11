@@ -214,13 +214,15 @@
         (is (nil? (fetch-reset stopper)))))))
 
 (deftest test-read-config
-  (let [values {:token "ABCD"}]
+  (let [values {:token  "ABCD"
+                :domain "example.com"}]
     (with-redefs [e/env #(% values)]
       (is (= values (read-config))))))
 
 (deftest test-validate-config
   (testing "valid config"
-    (is (some? (validate-config {:token "ABCD"}))))
+    (is (some? (validate-config {:token  "ABCD"
+                                 :domain "example.com"}))))
   (testing "invalid config"
     (are [c] (nil? (validate-config c))
       {}
