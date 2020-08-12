@@ -4,7 +4,6 @@
             [org.httpkit.client :as http]
             [org.httpkit.server :refer [run-server]]
             [cheshire.core :as json]
-            [cidr.core :as cidr]
             [ring.util.response :as res]
             [ring.middleware.defaults
              :refer [wrap-defaults api-defaults]]

@@ -1,4 +1,4 @@
-(defproject in.praj/zimbramailbot "0.0.4-SNAPSHOT"
+(defproject in.praj/zimbramailbot "0.0.5-SNAPSHOT"
   :description "Telegram bot for Zimbra mail server"
   :url "https://github.com/praj-foss/zimbramailbot"
 
@@ -10,7 +10,6 @@
                  [compojure              "1.6.1"]
                  [http-kit               "2.4.0"]
                  [cheshire               "5.10.0"]
-                 [com.ninjakoala/cidr    "1.0.6"]
                  [environ                "1.2.0"]]
   :plugins [[lein-environ "1.2.0"]]
   :main zimbramailbot.app
