@@ -6,8 +6,6 @@
             [cheshire.core :as json]
             [cidr.core :as cidr]
             [ring.util.response :as res]
-            [ring.middleware.proxy-headers
-             :refer [wrap-forwarded-remote-addr]]
             [ring.middleware.defaults
              :refer [wrap-defaults api-defaults]]
             [clojure.core.async :as y]
@@ -97,13 +95,6 @@
       (send-message api-url r)
       (recur))))
 
-(defn- ipv4? [addr]
-  (-> (str "^((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}"
-           "(0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)$")
-      (re-pattern)
-      (re-find addr)
-      (some?)))
-
 (def main-route
   (GET "/" []
        (-> (str "<a href=\"https://t.me/zimbramailbot\">"
@@ -118,14 +109,10 @@
           (y/timeout 2000) (-> (res/status 503)
                                (res/header "Retry-After" 60)))))
 
-(defroutes app-routes
-  main-route
-  (updates-route "token")
-  (not-found "Not Found"))
-
-(def handler
-  (-> app-routes
-      (wrap-forwarded-remote-addr)
+(defn handler [token]
+  (-> (routes main-route
+              (updates-route token)
+              (not-found "Not found"))
       (wrap-defaults api-defaults)))
 
 (def ^:private server-stopper (atom nil))
@@ -154,13 +141,14 @@
 
 (defn -main [& args]
   (if-let [conf (validate-config (read-config))]
-    (let [api-url  (str "https://api.telegram.org/bot" (:token conf))
-          hook-url (str (:domain conf) "/updates")
+    (let [token    (:token conf)
+          api-url  (str "https://api.telegram.org/bot" token)
+          hook-url (str (:domain conf) "/" token)
           port     (Integer/parseInt (:port conf))]
       (do (set-webhook api-url hook-url)
           (-> updates-chan
               (processor-chan 32)
               (sender-chan api-url))
-          (start-server handler port)
+          (start-server (handler token) port)
           (println "Server started on port" port)))
     (println "Invalid config: Failed to start server")))
