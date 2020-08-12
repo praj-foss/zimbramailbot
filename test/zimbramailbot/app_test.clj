@@ -133,28 +133,20 @@
            (:body resp)))))
 
 (deftest test-updates-route
-  (let [resp-for
-        #(-> (mock/request :post "/updates")
-             (mock/body (mock-update 777 "Sample text"))
-             (as-> req
-                 (if %1 (mock/header req "X-Forwarded-For" %1) req))
-             (handler))]
-    (testing "authorized Telegram IPs"
-      (are [ip] (= 200 (:status (resp-for ip)))
-        "149.154.160.0"
-        "149.154.175.255"
-        "91.108.4.0"
-        "91.108.7.255")
-      (testing "request timeout"
-        (with-redefs [zimbramailbot.app/updates-chan (y/chan)]
-          (let [resp (resp-for "91.108.4.100")]
-            (is (= 503 (:status resp)))
-            (is (= "60" (get-in resp [:headers "Retry-After"])))))))
-    (testing "other IPs"
-      (are [ip] (= 404 (:status (resp-for ip)))
-        "104.91.50.11"
-        "2001:db8:85a3:8d3:1319:8a2e:370:7348"
-        nil))))
+  (let [token   "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+        u-route (updates-route token)
+        respond #(-> (mock/request :post (str "/" token))
+                     (mock/body (mock-update 1234 "Henlo"))
+                     (u-route))]
+    (with-redefs [zimbramailbot.app/updates-chan (y/chan 1)]
+      (let [resp (respond)]
+        (is (= 200 (:status resp))
+            "Must accept requests unless channel is full"))
+      (let [resp (respond)]
+        (is (= 503 (:status resp))
+            "Must time out when channel is full")
+        (is (= "60" (get-in resp [:headers "Retry-After"]))
+            "Must return Retry-After header")))))
 
 (deftest test-processor-pipe
   (let [in   (y/chan)

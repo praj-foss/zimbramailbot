@@ -1,6 +1,6 @@
 (ns zimbramailbot.app
   (:require [compojure.core :refer :all]
-            [compojure.route :as route]
+            [compojure.route :refer [not-found]]
             [org.httpkit.client :as http]
             [org.httpkit.server :refer [run-server]]
             [cheshire.core :as json]
@@ -111,20 +111,17 @@
            (res/response)
            (res/content-type "text/html"))))
 
-(def updates-route
-  (POST "/updates" {ip :remote-addr body :body}
-        (if (and (ipv4? ip)
-                 (or (cidr/in-range? ip "149.154.160.0/20")
-                     (cidr/in-range? ip "91.108.4.0/22")))
-          (y/alt!!
-            [[updates-chan (slurp body)]] (res/status 200)
-            (y/timeout 2000) (-> (res/status 503)
-                                 (res/header "Retry-After" 60))))))
+(defn updates-route [token]
+  (POST (str "/" token) {body :body}
+        (y/alt!!
+          [[updates-chan (slurp body)]] (res/status 200)
+          (y/timeout 2000) (-> (res/status 503)
+                               (res/header "Retry-After" 60)))))
 
 (defroutes app-routes
   main-route
-  updates-route
-  (route/not-found "Not Found"))
+  (updates-route "token")
+  (not-found "Not Found"))
 
 (def handler
   (-> app-routes
